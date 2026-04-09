@@ -102,8 +102,18 @@ if uploaded_file is not None:
     csv_text = uploaded_file.getvalue().decode('utf-8').splitlines()
     reader = csv.DictReader(csv_text)
     headers = reader.fieldnames
-    data = list(reader)
+    data = []
+    for row in reader:
+        # Grab the topic, convert to string, and strip away any accidental spaces
+        topic_val = str(row.get('Topic', '')).strip()
+        
+        # Only add the row if the topic actually has text in it AND isn't "none"
+        if topic_val == "" or topic_val.lower() == "none":
+            row['Topic'] = "General"
+        else:
+            row['Topic'] = topic_val
 
+        data.append(row)
 
     with st.form("qa_test_form"):
         updated_data = []
@@ -117,7 +127,11 @@ if uploaded_file is not None:
     unsafe_allow_html=True)
 
 
-            with st.expander("🔍 View Test Details"):
+            
+            test_topic = str(row.get('Topic', 'General')).strip()
+            
+            
+            with st.expander(f"🔍 {test_topic}"):
   
                 raw_steps = str(row.get('Step by Step', 'No steps listed.'))
                 raw_expected = str(row.get('Expected Result', 'No expected result listed.'))
@@ -276,14 +290,22 @@ if uploaded_file is not None:
                 clean_title = (raw_title[:75] + '...') if len(raw_title) > 75 else raw_title
                 
                 # Add the row to the PDF
-                pdf.set_font("Arial", 'I', 10)
+                pdf.set_font("Arial", 'B', 11)
                 pdf.cell(145, 10, clean_title, border=1)
-                pdf.cell(45, 10, clean_status, border=1, ln=True, align="C")
+
+                if "Failed" in clean_status:
+                    pdf.set_fill_color(255, 200, 200)  
+                elif "Pass" in clean_status:
+                    pdf.set_fill_color(200, 255, 200)  
+                else:
+                    pdf.set_fill_color(255, 250, 200)  
+
+                pdf.cell(45, 10, clean_status, border=1, ln=True, align="C", fill=True)
 
                 if raw_comment:
                     pdf.set_font("Arial", 'I', 10)
                     safe_comment = raw_comment.encode('latin-1', 'ignore').decode('latin-1')
-                    pdf.set_fill_color(235, 235, 224)
+                    pdf.set_fill_color(224, 224, 224)
                     pdf.multi_cell(190, 8, f"{safe_comment}", border=1, align="L", fill=True)
             
             # 5. Convert the PDF to a downloadable format
@@ -306,24 +328,24 @@ if uploaded_file is not None:
 
     if 'download_ready' in st.session_state and 'pdf_ready' in st.session_state:
     
-    # We use columns so the buttons sit nicely side-by-side!
+
         btn_col1, btn_col2, spacer = st.columns([1.8, 4.6, 7])
     
-    with btn_col1:
-        st.download_button(
-            label="📥 Download CSV",
-            data=st.session_state['download_ready'],
-            file_name="Updated_Test_Cases.csv",
-            mime="text/csv"
-        )
+        with btn_col1:
+            st.download_button(
+                label="📥 Download CSV",
+                data=st.session_state['download_ready'],
+                file_name="Updated_Test_Cases.csv",
+                mime="text/csv"
+            )
         
-    with btn_col2:
-        st.download_button(
-            label="📄 PDF Report",
-            data=st.session_state['pdf_ready'],
-            file_name="QA_Run_Report.pdf",
-            mime="application/pdf"
-        )
+        with btn_col2:
+            st.download_button(
+                label="📄 PDF Report",
+                data=st.session_state['pdf_ready'],
+                file_name="QA_Run_Report.pdf",
+                mime="application/pdf"
+            )
 else:
     st.info("👆 Please drag and drop your exported CSV file into the box above to get started.")
 
