@@ -158,7 +158,7 @@ if uploaded_file is not None:
             col1, col2 = st.columns([1, 2])
 
             with col1:
-                status_options = ["Incomplete", "Pass", "Failed"]
+                status_options = ["Incomplete", "Pass", "Failed", "N/A"]
                 current_status = row.get('Status', 'Incomplete')
                 default_idx = status_options.index(current_status) if current_status in status_options else 0
                 
@@ -198,6 +198,7 @@ if uploaded_file is not None:
             passed = 0
             failed = 0
             incomplete = 0
+            na_count = 0
             # ------------------------------------
 
             for row in updated_data:
@@ -207,6 +208,8 @@ if uploaded_file is not None:
                     passed += 1
                 elif "Failed" in current_status:
                     failed += 1
+                elif "N/A" in current_status:
+                    na_count += 1
                 else:
                     incomplete += 1
                 # ----------------------------------
@@ -232,7 +235,7 @@ if uploaded_file is not None:
             st.markdown("### 📊 Run Completion Report")
             
             # Calculate Percentage
-            completed = passed + failed
+            completed = passed + failed + na_count
             completion_pct = (completed / total_tests) * 100 if total_tests > 0 else 0
             
             # Create 4 columns for a neat dashboard row
@@ -270,8 +273,10 @@ if uploaded_file is not None:
                     return 2
                 elif "Pass" in status_text:
                     return 3
-                else:
+                elif "N/A" in status_text:
                     return 4
+                else:
+                    return 5
                 
             sorted_pdf_data = sorted(updated_data, key=rank_status)
                         
@@ -296,7 +301,9 @@ if uploaded_file is not None:
                 if "Failed" in clean_status:
                     pdf.set_fill_color(255, 200, 200)  
                 elif "Pass" in clean_status:
-                    pdf.set_fill_color(200, 255, 200)  
+                    pdf.set_fill_color(200, 255, 200)
+                elif "N/A" in clean_status:
+                    pdf.set_fill_color(255, 250, 200)  
                 else:
                     pdf.set_fill_color(255, 250, 200)  
 
